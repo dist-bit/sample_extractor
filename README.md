@@ -12,8 +12,9 @@
 6. [Funciones Clave](#funciones-clave)
 7. [Registro de Comandos cURL](#registro-de-comandos-curl)
 8. [Ejemplos de Uso](#ejemplos-de-uso)
-9. [Solución de Problemas](#solución-de-problemas)
-10. [Glosario](#glosario)
+9. [Ejemplos de Respuestas de la API](#ejemplos-de-respuestas-de-la-api)
+10. [Solución de Problemas](#solución-de-problemas)
+11. [Glosario](#glosario)
 
 ## Introducción
 
@@ -446,6 +447,302 @@ if document_id:
         job_response = handler.client.create_processing_job(record_id)
         job_id = job_response.get("job_id")
         print(f"Job creado con ID: {job_id}")
+```
+
+## Ejemplos de Respuestas de la API
+
+### 1. Creación de Cliente
+
+**Respuesta Exitosa:**
+```json
+{
+  "id": "c1b2a3d4-e5f6-7890-a1b2-c3d4e5f67890",
+  "api_keys": {
+    "public_key": "pub_83f7c9b512345678abcdef0123456789",
+    "secret_key": "sec_83f7c9b512345678abcdef0123456789"
+  }
+}
+```
+
+**Respuesta de Error:**
+```json
+{
+  "error": true,
+  "message": "A user already exists with email example@test.com"
+}
+```
+
+### 2. Crear Configuración
+
+**Respuesta Exitosa:**
+```json
+{
+  "message": "Configuration dictaminación added successfully"
+}
+```
+
+**Respuesta de Error:**
+```json
+{
+  "error": true,
+  "message": "Client not found"
+}
+```
+
+### 3. Agregar Documento a un Registro
+
+**Respuesta Exitosa (sin procesamiento):**
+```json
+{
+  "message": "Document added to record successfully",
+  "document": {
+    "document_type": "acta_constitutiva",
+    "document_id": "doc_12345678abcdef0123456789",
+    "structure": {},
+    "created_at": "2025-04-16T10:30:45Z"
+  }
+}
+```
+
+**Respuesta Exitosa (con procesamiento):**
+```json
+{
+  "message": "Document successfully processed",
+  "job_id": "job_12345678abcdef0123456789",
+  "document": {
+    "document_type": "acta_constitutiva",
+    "document_id": "doc_12345678abcdef0123456789",
+    "structure": {},
+    "created_at": "2025-04-16T10:30:45Z"
+  }
+}
+```
+
+**Respuesta de Error:**
+```json
+{
+  "error": true,
+  "message": "Document type acta_fiscal not allowed"
+}
+```
+
+### 4. Crear un Registro
+
+**Respuesta Exitosa:**
+```json
+{
+  "id": "r1b2a3d4-e5f6-7890-a1b2-c3d4e5f67890",
+  "message": "Record created successfully"
+}
+```
+
+**Respuesta de Error:**
+```json
+{
+  "error": true,
+  "message": "Configuration dictaminacion_fiscal not found"
+}
+```
+
+### 5. Crear un Flujo
+
+**Respuesta Exitosa:**
+```json
+{
+  "message": "Flow dictaminación_fiscal created successfully"
+}
+```
+
+**Respuesta de Error:**
+```json
+{
+  "error": true,
+  "message": "Configuration dictaminación_fiscal not found"
+}
+```
+
+### 6. Crear un Trabajo de Procesamiento
+
+**Respuesta Exitosa:**
+```json
+{
+  "job_id": "job_12345678abcdef0123456789",
+  "message": "Processing job created successfully",
+  "status": "created"
+}
+```
+
+**Respuesta (ya procesando):**
+```json
+{
+  "job_id": "job_12345678abcdef0123456789",
+  "message": "Record is already being processed",
+  "status": "already_processing"
+}
+```
+
+**Respuesta de Error (documentos faltantes):**
+```json
+{
+  "message": "Missing required documents: [\"acta_constitutiva\",\"actas_de_asamblea\"]",
+  "status": "missing_documents",
+  "missing_documents": ["acta_constitutiva", "actas_de_asamblea"]
+}
+```
+
+### 7. Verificar Tipo de Documento
+
+**Respuesta Exitosa:**
+```json
+{
+  "status": true,
+  "type_document_found": "acta_constitutiva",
+  "points": [
+    "El documento contiene todas las secciones requeridas",
+    "Se identificaron estatutos correctamente",
+    "Firmas validadas correctamente"
+  ]
+}
+```
+
+**Respuesta Fallida (documento de tipo incorrecto):**
+```json
+{
+  "status": false,
+  "type_document_found": "otro_tipo_documento",
+  "points": [
+    "El documento no contiene las secciones esperadas para un acta constitutiva",
+    "No se encontró la sección de estatutos",
+    "No se identificaron las firmas requeridas"
+  ]
+}
+```
+
+### 8. Obtener Detalles de un Registro
+
+**Respuesta Exitosa:**
+```json
+{
+  "id": "r1b2a3d4-e5f6-7890-a1b2-c3d4e5f67890",
+  "configuration_ref": "dictaminación",
+  "documents": [
+    {
+      "document_type": "acta_constitutiva",
+      "document_id": "doc_12345678abcdef0123456789",
+      "created_at": "2025-04-16T10:30:45Z",
+      "document_predict": {
+        "status": true,
+        "type_document_found": "acta_constitutiva",
+        "points": [
+          "El documento contiene todas las secciones requeridas",
+          "Se identificaron estatutos correctamente",
+          "Firmas validadas correctamente"
+        ]
+      },
+      "entities": [
+        {
+          "structure": {
+            "nombre_empresa": "Corporación Ejemplo S.A. de C.V.",
+            "fecha_constitucion": "2020-01-15",
+            "capital_social": "1,000,000.00"
+          },
+          "query": "Extrae la información básica de la empresa",
+          "name_to_show": "Información Básica"
+        }
+      ]
+    }
+  ],
+  "status": "completed",
+  "created_at": "2025-04-16T10:15:30Z",
+  "response_client": {},
+  "allowed_documents": {
+    "acta_constitutiva": {
+      "required": true,
+      "entities": [
+        {
+          "structure": {
+            "nombre_empresa": "",
+            "fecha_constitucion": "",
+            "capital_social": ""
+          },
+          "query": "Extrae la información básica de la empresa",
+          "name_to_show": "Información Básica"
+        }
+      ]
+    },
+    "actas_de_asamblea": {
+      "required": false,
+      "entities": [
+        {
+          "structure": {
+            "fecha_asamblea": "",
+            "tipo_asamblea": "",
+            "acuerdos": []
+          },
+          "query": "Extrae la información de la asamblea",
+          "name_to_show": "Información de Asamblea"
+        }
+      ]
+    }
+  },
+  "is_processing": false,
+  "current_document_id": null
+}
+```
+
+**Respuesta de Error:**
+```json
+{
+  "error": true,
+  "message": "Record not found"
+}
+```
+
+### 9. Obtener Todos los Registros de un Cliente
+
+**Respuesta Exitosa:**
+```json
+{
+  "data": [
+    {
+      "id": "r1b2a3d4-e5f6-7890-a1b2-c3d4e5f67890",
+      "configuration_ref": "dictaminación",
+      "created_at": "2025-04-16T10:15:30Z",
+      "status": "completed",
+      "document_count": 2
+    },
+    {
+      "id": "s2c3b4d5-f6g7-8901-b2c3-d4e5f6g78901",
+      "configuration_ref": "dictaminación",
+      "created_at": "2025-04-15T14:22:10Z",
+      "status": "processing",
+      "document_count": 1
+    }
+  ],
+  "pagination": {
+    "current_page": 1,
+    "page_size": 10,
+    "total_items": 2,
+    "total_pages": 1
+  }
+}
+```
+
+### 10. Login de Usuario
+
+**Respuesta Exitosa:**
+```json
+{
+  "temporal_key": "temp_83f7c9b512345678abcdef0123456789"
+}
+```
+
+**Respuesta de Error:**
+```json
+{
+  "error": true,
+  "message": "Invalid credentials"
+}
 ```
 
 ## Solución de Problemas
