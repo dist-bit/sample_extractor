@@ -12,9 +12,10 @@
 6. [Funciones Clave](#funciones-clave)
 7. [Registro de Comandos cURL](#registro-de-comandos-curl)
 8. [Ejemplos de Uso](#ejemplos-de-uso)
-9. [Ejemplos de Respuestas de la API](#ejemplos-de-respuestas-de-la-api)
-10. [Solución de Problemas](#solución-de-problemas)
-11. [Glosario](#glosario)
+9. [Ejemplos Detallados de Métodos Principales](#ejemplos-detallados-de-métodos-principales)
+10. [Ejemplos de Respuestas de la API](#ejemplos-de-respuestas-de-la-api)
+11. [Solución de Problemas](#solución-de-problemas)
+12. [Glosario](#glosario)
 
 ## Introducción
 
@@ -448,6 +449,825 @@ if document_id:
         job_id = job_response.get("job_id")
         print(f"Job creado con ID: {job_id}")
 ```
+
+## Ejemplos Detallados de Métodos Principales
+
+### 1. Inicialización del Cliente
+
+El primer paso es inicializar el cliente con las credenciales correctas.
+
+#### Método: `NebuiaHandler.__init__()`
+
+```python
+from nebuia_handler import NebuiaHandler
+import logging
+
+# Configurar logging (opcional pero recomendado)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
+# Inicializar el handler
+handler = NebuiaHandler(
+    client_id="c1b2a3d4-e5f6-7890-a1b2-c3d4e5f67890",
+    api_key="pub_83f7c9b512345678abcdef0123456789",
+    api_secret="sec_83f7c9b512345678abcdef0123456789",
+    log_curl=True,  # Registrar comandos cURL para depuración
+    log_level=logging.INFO,  # Nivel de detalle del logging
+    base_url="https://api.nebuia.com/v1"  # URL base de la API (opcional)
+)
+```
+
+**¿Qué hace este código?**
+1. Importa la clase `NebuiaHandler` que encapsula toda la funcionalidad.
+2. Configura el sistema de logging para obtener información útil durante el proceso.
+3. Inicializa el cliente con las credenciales necesarias:
+   - `client_id`: Identificador único del cliente en Nebuia.
+   - `api_key`: Clave pública para las solicitudes a la API.
+   - `api_secret`: Clave secreta para autenticación.
+4. Habilita el registro de comandos cURL para facilitar la depuración.
+5. Establece el nivel de detalle de los mensajes de log.
+6. Opcionalmente, especifica la URL base de la API.
+
+**Respuesta de la API:** No hay respuesta directa, ya que este método inicializa el cliente localmente.
+
+### 2. Creación de un Registro
+
+Un registro (record) es un contenedor que agrupa documentos relacionados.
+
+#### Método: `NebuiaClient.create_record()`
+
+```python
+try:
+    # Crear un nuevo registro usando una configuración específica
+    record_response = handler.client.create_record(
+        config_name="dictaminación_fiscal"
+    )
+    
+    # Extraer el ID del registro para su uso posterior
+    record_id = record_response["id"]
+    
+    print(f"Registro creado con ID: {record_id}")
+    print(f"Detalles del registro: {record_response}")
+    
+except Exception as e:
+    print(f"Error al crear el registro: {str(e)}")
+```
+
+**¿Qué hace este código?**
+1. Llama al método `create_record()` del cliente Nebuia.
+2. Especifica la configuración que se utilizará para este registro mediante `config_name`.
+3. Recibe la respuesta de la API y extrae el ID del registro para uso futuro.
+4. Maneja posibles errores durante el proceso.
+
+**Respuesta de la API:**
+```json
+{
+  "id": "r1b2a3d4-e5f6-7890-a1b2-c3d4e5f67890",
+  "client_id": "c1b2a3d4-e5f6-7890-a1b2-c3d4e5f67890",
+  "configuration_ref": "dictaminación_fiscal",
+  "status": "waiting",
+  "created_at": "2025-04-16T10:15:30Z",
+  "documents": []
+}
+```
+
+### 3. Subida de Documentos
+
+Una vez creado el registro, se pueden subir documentos asociados a tipos específicos.
+
+#### Método: `NebuiaClient.upload_document()`
+
+```python
+# Definir la ruta al archivo PDF
+file_path = "./documentos/acta_constitutiva.pdf"
+document_type = "acta_constitutiva"
+
+try:
+    # Subir el documento al registro creado anteriormente
+    upload_response = handler.client.upload_document(
+        record_id=record_id,
+        file_path=file_path,
+        document_type=document_type,
+        timeout=300  # Tiempo máximo de espera en segundos
+    )
+    
+    # Extraer el ID del documento
+    document_id = upload_response["document_id"]
+    
+    print(f"Documento subido con ID: {document_id}")
+    print(f"Detalles de la carga: {upload_response}")
+    
+except Exception as e:
+    print(f"Error al subir el documento: {str(e)}")
+```
+
+**¿Qué hace este código?**
+1. Define la ruta al archivo PDF que se va a subir y su tipo según la configuración.
+2. Llama al método `upload_document()` con los parámetros necesarios:
+   - `record_id`: ID del registro al que pertenecerá el documento.
+   - `file_path`: Ruta completa al archivo PDF.
+   - `document_type`: Tipo de documento según la configuración.
+   - `timeout`: Tiempo máximo de espera para la operación.
+3. Extrae el ID del documento para referencia futura.
+4. Maneja posibles errores en el proceso de carga.
+
+**Respuesta de la API:**
+```json
+{
+  "document_id": "doc_12345678abcdef0123456789",
+  "document_type": "acta_constitutiva",
+  "status": "waiting",
+  "created_at": "2025-04-16T10:30:45Z"
+}
+```
+
+#### Subida de Múltiples Documentos
+
+```python
+# Definir un diccionario de documentos a subir
+documents = {
+    "acta_constitutiva": "./documentos/acta_constitutiva.pdf",
+    "actas_de_asamblea": "./documentos/actas_asamblea.pdf",
+    "poder_notarial": "./documentos/poder_notarial.pdf"
+}
+
+document_ids = {}  # Para almacenar los IDs de los documentos
+
+# Iterar a través de los documentos y subirlos
+for doc_type, file_path in documents.items():
+    try:
+        # Verificar que el archivo existe y es accesible
+        if not os.path.isfile(file_path):
+            print(f"El archivo {file_path} no existe o no es accesible.")
+            continue
+            
+        # Subir el documento
+        response = handler.client.upload_document(
+            record_id=record_id,
+            file_path=file_path,
+            document_type=doc_type
+        )
+        
+        # Guardar el ID del documento
+        document_ids[doc_type] = response["document_id"]
+        
+        print(f"Documento {doc_type} subido con ID: {document_ids[doc_type]}")
+        
+    except Exception as e:
+        print(f"Error al subir el documento {doc_type}: {str(e)}")
+```
+
+**¿Qué hace este código?**
+1. Define un diccionario donde las claves son los tipos de documentos y los valores son las rutas a los archivos.
+2. Crea un diccionario vacío para almacenar los IDs de los documentos subidos.
+3. Itera a través de cada documento:
+   - Verifica que el archivo exista y sea accesible.
+   - Sube el documento al registro.
+   - Almacena el ID del documento para uso posterior.
+4. Maneja los errores individualmente para cada documento.
+
+### 4. Espera por Procesamiento de Embeddings
+
+Después de subir los documentos, es necesario esperar a que el motor de embeddings los procese inicialmente.
+
+#### Método: `NebuiaHandler._wait_for_embedding()`
+
+```python
+# Esta función es parte de process_documents(), pero se puede usar independientemente
+def wait_for_embedding_example(handler, record_id, document_ids):
+    print("Esperando a que los documentos sean procesados por el motor de embeddings...")
+    
+    # Callback para mostrar progreso
+    def status_callback(progress, total, completed_docs):
+        percentage = (progress / total) * 100 if total > 0 else 0
+        print(f"Progreso: {percentage:.2f}% ({progress}/{total} documentos procesados)")
+        for doc_id, status in completed_docs.items():
+            print(f"  - Documento {doc_id}: {status}")
+    
+    try:
+        # Esperar a que todos los documentos estén en estado "complete"
+        embedding_success = handler._wait_for_embedding(
+            record_id=record_id,
+            document_ids=list(document_ids.values()),
+            interval=5,  # Intervalo de consulta en segundos
+            timeout=300,  # Tiempo máximo de espera en segundos
+            status_callback=status_callback
+        )
+        
+        if embedding_success:
+            print("Todos los documentos han sido procesados correctamente.")
+            return True
+        else:
+            print("No se pudieron procesar todos los documentos en el tiempo establecido.")
+            return False
+            
+    except Exception as e:
+        print(f"Error durante la espera por embeddings: {str(e)}")
+        return False
+
+# Uso del ejemplo
+wait_for_embedding_example(handler, record_id, document_ids)
+```
+
+**¿Qué hace este código?**
+1. Define una función de ejemplo para esperar por el procesamiento de embeddings.
+2. Crea una función de callback para mostrar el progreso durante la espera.
+3. Llama al método `_wait_for_embedding()` con los parámetros necesarios:
+   - `record_id`: ID del registro que contiene los documentos.
+   - `document_ids`: Lista de IDs de documentos a monitorear.
+   - `interval`: Tiempo entre consultas de estado en segundos.
+   - `timeout`: Tiempo máximo de espera en segundos.
+   - `status_callback`: Función para reportar el progreso.
+4. Devuelve un booleano que indica si todos los documentos se procesaron exitosamente.
+
+**Respuesta de la API (durante monitoreo):**
+```json
+{
+  "id": "r1b2a3d4-e5f6-7890-a1b2-c3d4e5f67890",
+  "status": "waiting",
+  "documents": [
+    {
+      "document_id": "doc_12345678abcdef0123456789",
+      "document_type": "acta_constitutiva",
+      "status": "processing",
+      "progress": 0.45
+    },
+    {
+      "document_id": "doc_98765432abcdef0123456789",
+      "document_type": "actas_de_asamblea",
+      "status": "waiting",
+      "progress": 0.0
+    }
+  ]
+}
+```
+
+### 5. Verificación de Tipos de Documentos
+
+Una vez procesados los documentos, es necesario verificar que sean del tipo correcto.
+
+#### Método: `NebuiaClient.verify_document_type()`
+
+```python
+def verify_single_document(handler, record_id, document_id, expected_type):
+    try:
+        # Verificar el tipo de documento
+        verification_result = handler.client.verify_document_type(
+            record_id=record_id,
+            document_id=document_id
+        )
+        
+        # Analizar el resultado
+        is_valid = verification_result.get("status", False)
+        
+        if is_valid:
+            print(f"✅ Documento verificado como: {expected_type}")
+            return True
+        else:
+            print(f"❌ Documento inválido. Verificación fallida.")
+            print(f"   Tipo encontrado: {verification_result.get('type_document_found', 'desconocido')}")
+            
+            if "points" in verification_result:
+                print("   Razones:")
+                for i, point in enumerate(verification_result["points"], 1):
+                    print(f"   {i}. {point}")
+                    
+            return False
+            
+    except Exception as e:
+        print(f"Error durante la verificación: {str(e)}")
+        return False
+
+# Ejemplo de uso con un documento individual
+doc_id = document_ids["acta_constitutiva"]
+verify_single_document(handler, record_id, doc_id, "acta_constitutiva")
+```
+
+**¿Qué hace este código?**
+1. Define una función para verificar un documento individual.
+2. Llama al método `verify_document_type()` con los parámetros necesarios:
+   - `record_id`: ID del registro que contiene el documento.
+   - `document_id`: ID del documento a verificar.
+3. Analiza el resultado de la verificación:
+   - Comprueba si el documento es válido (status=true).
+   - Si no es válido, muestra el tipo detectado y las razones del fallo.
+
+**Respuesta de la API (verificación exitosa):**
+```json
+{
+  "status": true,
+  "type_document_found": "acta_constitutiva",
+  "points": [
+    "El documento contiene todas las secciones requeridas para un acta constitutiva",
+    "Se identificaron estatutos correctamente",
+    "Firmas validadas correctamente"
+  ]
+}
+```
+
+**Respuesta de la API (verificación fallida):**
+```json
+{
+  "status": false,
+  "type_document_found": "otro_tipo_documento",
+  "points": [
+    "El documento no contiene las secciones esperadas para un acta constitutiva",
+    "No se encontró la sección de estatutos",
+    "No se identificaron las firmas requeridas"
+  ]
+}
+```
+
+#### Método: `NebuiaHandler._verify_all_documents()`
+
+```python
+def verify_all_documents_example(handler, record_id, document_ids):
+    print("Verificando todos los documentos...")
+    
+    try:
+        # Preparar el mapeo de document_id -> document_type
+        document_types = {}
+        for doc_type, doc_id in document_ids.items():
+            document_types[doc_id] = doc_type
+        
+        # Verificar todos los documentos
+        verification_results, all_passed = handler._verify_all_documents(
+            record_id=record_id,
+            document_ids=list(document_ids.values())
+        )
+        
+        # Analizar resultados
+        print(f"\nResumen de verificación:")
+        print(f"Todos los documentos verificados: {all_passed}")
+        
+        for doc_id, result in verification_results.items():
+            doc_type = document_types.get(doc_id, "tipo desconocido")
+            status = result.get("status", False)
+            print(f"\nDocumento: {doc_type} (ID: {doc_id})")
+            print(f"Estado: {'✅ Verificado' if status else '❌ Rechazado'}")
+            
+            if not status:
+                print(f"Tipo detectado: {result.get('type_document_found', 'desconocido')}")
+                if "points" in result:
+                    print("Razones:")
+                    for i, point in enumerate(result["points"], 1):
+                        print(f"  {i}. {point}")
+        
+        return all_passed, verification_results
+            
+    except Exception as e:
+        print(f"Error durante la verificación de documentos: {str(e)}")
+        return False, {}
+
+# Uso del ejemplo
+verification_passed, results = verify_all_documents_example(handler, record_id, document_ids)
+```
+
+**¿Qué hace este código?**
+1. Define una función para verificar todos los documentos en un registro.
+2. Prepara un mapeo entre IDs de documentos y sus tipos para referencia.
+3. Llama al método `_verify_all_documents()` con los parámetros necesarios.
+4. Analiza y muestra los resultados de verificación para cada documento.
+5. Devuelve un booleano que indica si todos los documentos pasaron la verificación y los resultados detallados.
+
+### 6. Creación de un Trabajo de Procesamiento
+
+Si la verificación es exitosa, el siguiente paso es crear un trabajo de procesamiento para extraer información de los documentos.
+
+#### Método: `NebuiaClient.create_processing_job()`
+
+```python
+def create_processing_job_example(handler, record_id):
+    print(f"Creando trabajo de procesamiento para el registro {record_id}...")
+    
+    try:
+        # Crear el trabajo de procesamiento
+        job_response = handler.client.create_processing_job(record_id)
+        
+        # Extraer información relevante
+        job_id = job_response.get("job_id")
+        status = job_response.get("status")
+        
+        print(f"Trabajo creado exitosamente.")
+        print(f"ID del trabajo: {job_id}")
+        print(f"Estado inicial: {status}")
+        
+        return job_id
+            
+    except Exception as e:
+        print(f"Error al crear el trabajo de procesamiento: {str(e)}")
+        return None
+
+# Uso del ejemplo (solo si la verificación fue exitosa)
+if verification_passed:
+    job_id = create_processing_job_example(handler, record_id)
+else:
+    print("No se puede procesar debido a errores en la verificación de documentos.")
+```
+
+**¿Qué hace este código?**
+1. Define una función para crear un trabajo de procesamiento.
+2. Llama al método `create_processing_job()` con el ID del registro.
+3. Extrae información relevante de la respuesta, como el ID del trabajo y su estado.
+4. Solo ejecuta la creación del trabajo si todos los documentos pasaron la verificación.
+
+**Respuesta de la API:**
+```json
+{
+  "job_id": "job_12345678abcdef0123456789",
+  "record_id": "r1b2a3d4-e5f6-7890-a1b2-c3d4e5f67890",
+  "status": "created",
+  "message": "Processing job created successfully"
+}
+```
+
+### 7. Espera por Finalización del Procesamiento
+
+Una vez creado el trabajo, es necesario esperar a que se complete el procesamiento de todos los documentos.
+
+#### Método: `NebuiaClient.wait_for_record_completion()`
+
+```python
+def wait_for_processing_completion(handler, record_id):
+    print(f"Esperando a que se complete el procesamiento del registro {record_id}...")
+    
+    # Callback para mostrar progreso
+    def status_callback(status, progress, elapsed_time):
+        if progress is not None:
+            percentage = progress * 100
+            print(f"Progreso: {percentage:.2f}% | Estado: {status} | Tiempo transcurrido: {elapsed_time:.2f}s")
+        else:
+            print(f"Estado: {status} | Tiempo transcurrido: {elapsed_time:.2f}s")
+    
+    try:
+        # Esperar a que el registro complete su procesamiento
+        completed_record = handler.client.wait_for_record_completion(
+            record_id=record_id,
+            timeout=1800,  # 30 minutos
+            interval=10,   # Consultar cada 10 segundos
+            status_callback=status_callback
+        )
+        
+        print("\nProcesamiento completado exitosamente.")
+        print(f"Estado final: {completed_record.get('status')}")
+        
+        return completed_record
+            
+    except Exception as e:
+        print(f"Error durante la espera por procesamiento: {str(e)}")
+        return None
+
+# Uso del ejemplo
+processed_record = wait_for_processing_completion(handler, record_id)
+```
+
+**¿Qué hace este código?**
+1. Define una función para esperar la finalización del procesamiento.
+2. Crea una función de callback para mostrar el progreso durante la espera.
+3. Llama al método `wait_for_record_completion()` con los parámetros necesarios:
+   - `record_id`: ID del registro a monitorear.
+   - `timeout`: Tiempo máximo de espera en segundos.
+   - `interval`: Tiempo entre consultas de estado en segundos.
+   - `status_callback`: Función para reportar el progreso.
+4. Devuelve el registro completo una vez finalizado el procesamiento.
+
+**Respuesta de la API (durante monitoreo):**
+```json
+{
+  "id": "r1b2a3d4-e5f6-7890-a1b2-c3d4e5f67890",
+  "status": "processing",
+  "progress": 0.65,
+  "documents": [
+    {
+      "document_id": "doc_12345678abcdef0123456789",
+      "document_type": "acta_constitutiva",
+      "status": "completed",
+      "progress": 1.0
+    },
+    {
+      "document_id": "doc_98765432abcdef0123456789",
+      "document_type": "actas_de_asamblea",
+      "status": "processing",
+      "progress": 0.3
+    }
+  ]
+}
+```
+
+**Respuesta de la API (procesamiento finalizado):**
+```json
+{
+  "id": "r1b2a3d4-e5f6-7890-a1b2-c3d4e5f67890",
+  "status": "completed",
+  "progress": 1.0,
+  "documents": [
+    {
+      "document_id": "doc_12345678abcdef0123456789",
+      "document_type": "acta_constitutiva",
+      "status": "completed",
+      "progress": 1.0,
+      "entities": [
+        {
+          "nombre_empresa": "Corporación Ejemplo S.A. de C.V.",
+          "fecha_constitucion": "2020-01-15",
+          "capital_social": "1,000,000.00"
+        }
+      ]
+    },
+    {
+      "document_id": "doc_98765432abcdef0123456789",
+      "document_type": "actas_de_asamblea",
+      "status": "completed",
+      "progress": 1.0,
+      "entities": [
+        {
+          "fecha_asamblea": "2023-08-12",
+          "tipo_asamblea": "Ordinaria",
+          "acuerdos": ["Aprobación de estados financieros", "Nombramiento de nuevo consejero"]
+        }
+      ]
+    }
+  ]
+}
+```
+
+### 8. Extracción de Entidades de Documentos
+
+Una vez completado el procesamiento, es posible extraer y estructurar la información relevante de los documentos.
+
+#### Método: `NebuiaHandler.extract_document_entities()`
+
+```python
+def extract_entities_example(handler, processed_record):
+    if not processed_record or processed_record.get('status') != 'completed':
+        print("El registro no está completado, no se pueden extraer entidades.")
+        return {}
+    
+    print("Extrayendo entidades de los documentos procesados...")
+    
+    try:
+        # Extraer las entidades de todos los documentos
+        extracted_info = handler.extract_document_entities(processed_record)
+        
+        # Mostrar información extraída por tipo de documento
+        for doc_type, entities in extracted_info.items():
+            print(f"\n📄 Documento: {doc_type}")
+            
+            if isinstance(entities, list):
+                # Si hay múltiples entidades para este tipo de documento
+                for i, entity in enumerate(entities, 1):
+                    print(f"  Entidad {i}:")
+                    for key, value in entity.items():
+                        print(f"    - {key}: {value}")
+            else:
+                # Si hay una sola entidad para este tipo de documento
+                for key, value in entities.items():
+                    print(f"  - {key}: {value}")
+        
+        return extracted_info
+            
+    except Exception as e:
+        print(f"Error durante la extracción de entidades: {str(e)}")
+        return {}
+
+# Uso del ejemplo
+if processed_record:
+    extracted_data = extract_entities_example(handler, processed_record)
+```
+
+**¿Qué hace este código?**
+1. Define una función para extraer entidades de los documentos procesados.
+2. Verifica que el registro esté en estado "completed".
+3. Llama al método `extract_document_entities()` con el registro procesado.
+4. Muestra la información extraída, organizada por tipo de documento.
+5. Maneja diferentes estructuras de datos según el documento tenga una o múltiples entidades.
+
+**Estructura de los datos extraídos:**
+```python
+{
+    "acta_constitutiva": {
+        "nombre_empresa": "Corporación Ejemplo S.A. de C.V.",
+        "fecha_constitucion": "2020-01-15",
+        "capital_social": "1,000,000.00",
+        "objeto_social": "Desarrollo de software y servicios de tecnología"
+    },
+    "actas_de_asamblea": [
+        {
+            "fecha_asamblea": "2023-08-12",
+            "tipo_asamblea": "Ordinaria",
+            "acuerdos": ["Aprobación de estados financieros", "Nombramiento de nuevo consejero"]
+        }
+    ]
+}
+```
+
+### 9. Flujo Completo con process_documents()
+
+El método `process_documents()` de `NebuiaHandler` encapsula todo el flujo anterior en una sola llamada.
+
+#### Método: `NebuiaHandler.process_documents()`
+
+```python
+def process_documents_complete_example():
+    # Inicializar el handler
+    handler = NebuiaHandler(
+        client_id="c1b2a3d4-e5f6-7890-a1b2-c3d4e5f67890",
+        api_key="pub_83f7c9b512345678abcdef0123456789",
+        api_secret="sec_83f7c9b512345678abcdef0123456789",
+        log_curl=True
+    )
+    
+    # Definir documentos a procesar
+    documents = {
+        "acta_constitutiva": "./documentos/acta_constitutiva.pdf",
+        "actas_de_asamblea": "./documentos/actas_asamblea.pdf",
+        "poder_notarial": "./documentos/poder_notarial.pdf"
+    }
+    
+    try:
+        # Callback para mostrar progreso del procesamiento
+        def status_callback(status, progress, elapsed_time):
+            if progress is not None:
+                percentage = progress * 100
+                print(f"Progreso: {percentage:.2f}% | Estado: {status} | Tiempo transcurrido: {elapsed_time:.2f}s")
+            else:
+                print(f"Estado: {status} | Tiempo transcurrido: {elapsed_time:.2f}s")
+        
+        # Procesar todos los documentos en un solo paso
+        result = handler.process_documents(
+            documents=documents,
+            config_name="dictaminación_fiscal",
+            wait_for_completion=True,
+            auto_process=True,  # Procesar incluso si la verificación falla
+            timeout=1800,       # 30 minutos máximo
+            status_callback=status_callback
+        )
+        
+        print("\n✅ Procesamiento completado.")
+        
+        # Verificar si hay resultados de verificación
+        if "verification_results" in result:
+            print("\n📋 Resultados de verificación:")
+            for doc_type, verification in result["verification_results"].items():
+                status = verification.get("status", False)
+                print(f"  - {doc_type}: {'✅ Verificado' if status else '❌ Rechazado'}")
+        
+        # Extraer información procesada
+        extracted_info = handler.extract_document_entities(result)
+        
+        # Mostrar información extraída
+        print("\n📊 Información extraída:")
+        for doc_type, entities in extracted_info.items():
+            print(f"\n  📄 {doc_type}:")
+            
+            if isinstance(entities, list):
+                for i, entity in enumerate(entities, 1):
+                    print(f"    Entidad {i}:")
+                    for k, v in entity.items():
+                        print(f"      - {k}: {v}")
+            else:
+                for k, v in entities.items():
+                    print(f"    - {k}: {v}")
+        
+        return result, extracted_info
+            
+    except Exception as e:
+        print(f"❌ Error durante el procesamiento: {str(e)}")
+        return None, {}
+
+# Ejecutar el ejemplo completo
+result, extracted_data = process_documents_complete_example()
+```
+
+**¿Qué hace este código?**
+1. Define una función que implementa el flujo completo de procesamiento.
+2. Inicializa el handler con las credenciales necesarias.
+3. Define un diccionario de documentos a procesar.
+4. Crea una función de callback para mostrar el progreso.
+5. Llama al método `process_documents()` con todos los parámetros necesarios:
+   - `documents`: Diccionario de documentos a procesar.
+   - `config_name`: Nombre de la configuración a utilizar.
+   - `wait_for_completion`: Si debe esperar a que se complete el procesamiento.
+   - `auto_process`: Si debe procesar incluso si la verificación falla.
+   - `timeout`: Tiempo máximo de espera en segundos.
+   - `status_callback`: Función para reportar el progreso.
+6. Muestra los resultados de verificación.
+7. Extrae y muestra la información procesada.
+
+**Estructura de resultado completo:**
+```python
+{
+    "id": "r1b2a3d4-e5f6-7890-a1b2-c3d4e5f67890",
+    "status": "completed",
+    "verification_results": {
+        "acta_constitutiva": {
+            "status": true,
+            "type_document_found": "acta_constitutiva",
+            "points": [...]
+        },
+        "actas_de_asamblea": {
+            "status": true,
+            "type_document_found": "actas_de_asamblea",
+            "points": [...]
+        },
+        "poder_notarial": {
+            "status": false,
+            "type_document_found": "otro_tipo_documento",
+            "points": [...]
+        }
+    },
+    "documents": [
+        {
+            "document_type": "acta_constitutiva",
+            "document_id": "doc_12345678abcdef0123456789",
+            "status": "completed",
+            "entities": [...]
+        },
+        ...
+    ],
+    "job_id": "job_12345678abcdef0123456789",
+    "created_at": "2025-04-16T10:15:30Z",
+    "completed_at": "2025-04-16T10:45:20Z"
+}
+```
+
+### 10. Manejo de Errores
+
+Es importante implementar un manejo robusto de errores al trabajar con la API de Nebuia.
+
+#### Ejemplo de Manejo de Errores Específicos
+
+```python
+from nebuia_client import NebuiaAPIError, NebuiaTimeoutError, NebuiaValidationError
+
+def robust_document_processing(handler, documents, config_name):
+    try:
+        result = handler.process_documents(
+            documents=documents,
+            config_name=config_name,
+            wait_for_completion=True
+        )
+        return True, result
+        
+    except NebuiaValidationError as e:
+        print(f"❌ Error de validación: {str(e)}")
+        print("   → Este error ocurre cuando hay problemas con los documentos o su formato.")
+        print("   → Verifica que los documentos sean PDFs válidos y accesibles.")
+        return False, {"error": "validation", "message": str(e)}
+        
+    except NebuiaTimeoutError as e:
+        print(f"⏱️ Error de tiempo de espera: {str(e)}")
+        print("   → El procesamiento ha tomado demasiado tiempo.")
+        print("   → Puedes intentar nuevamente o aumentar el timeout.")
+        return False, {"error": "timeout", "message": str(e)}
+        
+    except NebuiaAPIError as e:
+        print(f"🌐 Error de API: {str(e)}")
+        print(f"   → Código HTTP: {e.status_code}")
+        print(f"   → Respuesta: {e.response}")
+        
+        if e.status_code == 401:
+            print("   → Verifica tus credenciales de API.")
+        elif e.status_code == 404:
+            print("   → Recurso no encontrado. Verifica los IDs utilizados.")
+        elif e.status_code == 429:
+            print("   → Límite de tasa excedido. Espera un momento e intenta nuevamente.")
+        
+        return False, {"error": "api", "code": e.status_code, "message": str(e)}
+        
+    except Exception as e:
+        print(f"⚠️ Error inesperado: {str(e)}")
+        print("   → Este es un error no controlado específicamente.")
+        return False, {"error": "unknown", "message": str(e)}
+
+# Uso de la función robusta
+success, result = robust_document_processing(
+    handler,
+    documents={"acta_constitutiva": "./documentos/acta.pdf"},
+    config_name="dictaminación_fiscal"
+)
+
+if success:
+    print("✅ Procesamiento exitoso!")
+    extracted_info = handler.extract_document_entities(result)
+    # Hacer algo con la información extraída
+else:
+    print(f"❌ Procesamiento fallido: {result['error']} - {result['message']}")
+    # Implementar lógica de recuperación o reintento
+```
+
+**¿Qué hace este código?**
+1. Define una función que implementa manejo robusto de errores específicos.
+2. Captura diferentes tipos de excepciones que pueden ocurrir durante el procesamiento:
+   - `NebuiaValidationError`: Problemas con los documentos o su formato.
+   - `NebuiaTimeoutError`: El procesamiento ha tomado demasiado tiempo.
+   - `NebuiaAPIError`: Errores específicos de la API, con códigos HTTP.
+   - `Exception`: Cualquier otro error no controlado específicamente.
+3. Proporciona mensajes informativos y sugerencias para cada tipo de error.
+4. Devuelve una estructura uniforme para facilitar el manejo de errores.
+5. Demuestra cómo usar la función y manejar sus resultados de manera apropiada.
 
 ## Ejemplos de Respuestas de la API
 
@@ -1144,6 +1964,76 @@ Este endpoint recupera métricas sobre los trabajos de procesamiento de un clien
     "total_items": 1,
     "total_pages": 1
   }
+}
+```
+
+### 14. Cancelar un Trabajo (`DELETE /clients/:client_id/records/jobs/cancel/:job_id`)
+
+Este endpoint cancela un trabajo de procesamiento en curso.
+
+#### Respuesta Exitosa (200 OK)
+
+```json
+{
+  "status": "success",
+  "message": "Job canceled successfully"
+}
+```
+
+#### Respuesta de Error (400 Bad Request)
+
+```json
+{
+  "error": true,
+  "message": "You can't cancel a job with status completed"
+}
+```
+
+### 15. Eliminar un Trabajo (`DELETE /clients/:client_id/records/jobs/delete/:job_id`)
+
+Este endpoint elimina un trabajo de procesamiento que no está en curso.
+
+#### Respuesta Exitosa (200 OK)
+
+```json
+{
+  "status": "success",
+  "message": "Job deleted successfully"
+}
+```
+
+#### Respuesta de Error (400 Bad Request)
+
+```json
+{
+  "error": true,
+  "message": "Cannot delete a job that is currently processing. Cancel it first."
+}
+```
+
+### 16. Reprocesar un Trabajo (`POST /clients/:client_id/records/:record_id/reprocess/job/:job_id`)
+
+Este endpoint crea un nuevo trabajo para reprocesar un registro basado en un trabajo anterior.
+
+#### Respuesta Exitosa (200 OK)
+
+```json
+{
+  "job_id": "job_45678901abcdef0123456789"
+}
+```
+
+### 17. Obtener Información de Cuota (`GET /clients/:client_id/quota`)
+
+Este endpoint obtiene la información actual de cuota de un cliente.
+
+#### Respuesta Exitosa (200 OK)
+
+```json
+{
+  "quota": 1000,
+  "used_quota": 42,
+  "remaining_quota": 958
 }
 ```
 
